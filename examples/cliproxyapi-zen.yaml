@@ -1,0 +1,49 @@
+# Merge these sections into your existing host config. Replace paths, keys,
+# proxies, and the model placeholder. Keep your existing frontend authentication.
+# This file is an example, not a complete or credential-bearing deployment.
+plugins:
+  enabled: true
+  dir: /opt/cliproxyapi/plugins
+  configs:
+    opencode-zen-pool:
+      enabled: true
+      priority: 100
+      cpa-config-path: /opt/cliproxyapi/config.yaml
+      state-dir: /var/lib/cliproxyapi-zen-pool
+      provider-name: opencode-zen
+      fallback-cooldown: 30m
+      auth-suspension: 15m
+      rate-limit-fallback: 1s
+      disabled-accounts: []
+
+openai-compatibility:
+  - name: opencode-zen
+    base-url: https://opencode.ai/zen/v1
+    # Explicit, provider-scoped integration: the plugin owns Zen cooldowns.
+    disable-cooling: true
+    # Do not repeat whole host retry rounds while an async result is pending.
+    request-retry: 0
+    headers:
+      x-opencode-session: "$x-opencode-session"
+      x-opencode-client: "$x-opencode-client"
+      x-opencode-request: "$x-opencode-request"
+      x-opencode-project: "$x-opencode-project"
+      x-request-id: "$x-request-id"
+      x-correlation-id: "$x-correlation-id"
+      traceparent: "$traceparent"
+      tracestate: "$tracestate"
+      user-agent: "$user-agent"
+    # Preserve caller-supplied prompt_cache_key on hosts that otherwise remove it.
+    support-prompt-cache-key: true
+    api-key-entries:
+      - api-key: "ZEN_KEY_1"
+        proxy-url: "http://proxy-1.example:8080"
+      - api-key: "ZEN_KEY_2"
+        proxy-url: "socks5://proxy-2.example:1080"
+      - api-key: "ZEN_KEY_3"
+        proxy-url: "https://proxy-3.example:8443"
+    # Keep your existing Zen chat/completions-compatible model list here.
+    # The placeholder is deliberately not a claim about current model inventory.
+    models:
+      - name: "YOUR_ZEN_CHAT_COMPLETIONS_MODEL"
+        alias: "zen-main"

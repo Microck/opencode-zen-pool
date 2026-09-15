@@ -1,0 +1,100 @@
+=== RUN   TestClassifierProductionShapeFixtures
+=== RUN   TestClassifierProductionShapeFixtures/zen_free_usage
+=== RUN   TestClassifierProductionShapeFixtures/zen_transient_rate
+=== RUN   TestClassifierProductionShapeFixtures/zen_credits
+=== RUN   TestClassifierProductionShapeFixtures/zen_workspace_monthly
+=== RUN   TestClassifierProductionShapeFixtures/zen_user_monthly
+=== RUN   TestClassifierProductionShapeFixtures/zen_black_usage
+=== RUN   TestClassifierProductionShapeFixtures/zen_invalid_auth
+=== RUN   TestClassifierProductionShapeFixtures/zen_region
+=== RUN   TestClassifierProductionShapeFixtures/zen_internal
+=== RUN   TestClassifierProductionShapeFixtures/go_not_supported
+=== RUN   TestClassifierProductionShapeFixtures/generic_explicit_quota
+=== RUN   TestClassifierProductionShapeFixtures/generic_ambiguous_429
+=== RUN   TestClassifierProductionShapeFixtures/explicit_rate_wins_over_quota_word
+=== RUN   TestClassifierProductionShapeFixtures/explicit_rate_code_wins
+=== RUN   TestClassifierProductionShapeFixtures/hyphenated_rate_window
+--- PASS: TestClassifierProductionShapeFixtures (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_free_usage (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_transient_rate (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_credits (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_workspace_monthly (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_user_monthly (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_black_usage (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_invalid_auth (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_region (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/zen_internal (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/go_not_supported (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/generic_explicit_quota (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/generic_ambiguous_429 (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/explicit_rate_wins_over_quota_word (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/explicit_rate_code_wins (0.00s)
+    --- PASS: TestClassifierProductionShapeFixtures/hyphenated_rate_window (0.00s)
+=== RUN   TestClassifierResetSignals
+=== RUN   TestClassifierResetSignals/http_date
+=== RUN   TestClassifierResetSignals/fractional
+=== RUN   TestClassifierResetSignals/timestamp_rfc3339
+=== RUN   TestClassifierResetSignals/timestamp_unix
+=== RUN   TestClassifierResetSignals/timestamp_milliseconds
+=== RUN   TestClassifierResetSignals/metadata_duration
+=== RUN   TestClassifierResetSignals/message_duration
+=== RUN   TestClassifierResetSignals/maximum_valid_signal
+=== RUN   TestClassifierResetSignals/invalid_header
+=== RUN   TestClassifierResetSignals/past_header
+=== RUN   TestClassifierResetSignals/negative_header
+=== RUN   TestClassifierResetSignals/overflow_header
+=== RUN   TestClassifierResetSignals/no_reset
+--- PASS: TestClassifierResetSignals (0.00s)
+    --- PASS: TestClassifierResetSignals/http_date (0.00s)
+    --- PASS: TestClassifierResetSignals/fractional (0.00s)
+    --- PASS: TestClassifierResetSignals/timestamp_rfc3339 (0.00s)
+    --- PASS: TestClassifierResetSignals/timestamp_unix (0.00s)
+    --- PASS: TestClassifierResetSignals/timestamp_milliseconds (0.00s)
+    --- PASS: TestClassifierResetSignals/metadata_duration (0.00s)
+    --- PASS: TestClassifierResetSignals/message_duration (0.00s)
+    --- PASS: TestClassifierResetSignals/maximum_valid_signal (0.00s)
+    --- PASS: TestClassifierResetSignals/invalid_header (0.00s)
+    --- PASS: TestClassifierResetSignals/past_header (0.00s)
+    --- PASS: TestClassifierResetSignals/negative_header (0.00s)
+    --- PASS: TestClassifierResetSignals/overflow_header (0.00s)
+    --- PASS: TestClassifierResetSignals/no_reset (0.00s)
+=== RUN   TestClassifierDoesNotEchoSecretsOrInferFromHTML
+--- PASS: TestClassifierDoesNotEchoSecretsOrInferFromHTML (0.00s)
+=== RUN   TestDiscoveryExactAuthIDsAndProxyIsolationNoClaudeRequired
+--- PASS: TestDiscoveryExactAuthIDsAndProxyIsolationNoClaudeRequired (0.00s)
+=== RUN   TestRejectGoOtherOriginsDuplicateKeysAndUnsafeProxy
+--- PASS: TestRejectGoOtherOriginsDuplicateKeysAndUnsafeProxy (0.00s)
+=== RUN   TestProxyChangeKeepsCooldownAndUsesNewAuthID
+--- PASS: TestProxyChangeKeepsCooldownAndUsesNewAuthID (0.00s)
+=== RUN   TestManagementProtocolAndStrictResume
+--- PASS: TestManagementProtocolAndStrictResume (0.00s)
+=== RUN   TestCorruptStateKeepsSchedulerRegisteredAndNeverOverwritesState
+--- PASS: TestCorruptStateKeepsSchedulerRegisteredAndNeverOverwritesState (0.00s)
+=== RUN   TestHealthyAccountStaysSelectedAndSuccessDoesNotAdvance
+--- PASS: TestHealthyAccountStaysSelectedAndSuccessDoesNotAdvance (0.00s)
+=== RUN   TestQuotaAdvancesSkipsAndRecoversWithoutPreempting
+--- PASS: TestQuotaAdvancesSkipsAndRecoversWithoutPreempting (0.00s)
+=== RUN   TestAllExhaustedAggregateAndExpiry
+--- PASS: TestAllExhaustedAggregateAndExpiry (0.00s)
+=== RUN   TestTransient5xxAndNonQuota429DoNotAdvance
+--- PASS: TestTransient5xxAndNonQuota429DoNotAdvance (0.00s)
+=== RUN   TestMissingHostCandidateNeverImplicitFailover
+--- PASS: TestMissingHostCandidateNeverImplicitFailover (0.00s)
+=== RUN   TestConcurrentSchedulersAndRepeatedQuotaAdvanceOnlyOnce
+--- PASS: TestConcurrentSchedulersAndRepeatedQuotaAdvanceOnlyOnce (0.00s)
+=== RUN   TestLateSuccessAndOldQuotaDoNotUndoTransitionOrResume
+--- PASS: TestLateSuccessAndOldQuotaDoNotUndoTransitionOrResume (0.00s)
+=== RUN   TestAuthSuspensionAndExplicitResume
+--- PASS: TestAuthSuspensionAndExplicitResume (0.00s)
+=== RUN   TestFileStateRestartOptionalFieldsAndLock
+--- PASS: TestFileStateRestartOptionalFieldsAndLock (0.00s)
+=== RUN   TestInvalidStateFailsClosedAndWriteFailureStopsSelection
+--- PASS: TestInvalidStateFailsClosedAndWriteFailureStopsSelection (0.00s)
+=== RUN   TestSessionHeaderGuard
+--- PASS: TestSessionHeaderGuard (0.00s)
+=== RUN   TestYAML
+--- PASS: TestYAML (0.00s)
+=== RUN   TestYAMLRejectsInvalidDocuments
+--- PASS: TestYAMLRejectsInvalidDocuments (0.00s)
+PASS
+ok  	opencode-zen-pool/src	0.018s

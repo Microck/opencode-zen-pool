@@ -1,0 +1,16 @@
+go vet -tags=integration ./...
+go test -count=1 ./src
+ok  	opencode-zen-pool/src	0.018s
+go test -race -count=1 ./src
+ok  	opencode-zen-pool/src	1.081s
+mkdir -p dist/linux/amd64/
+CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -ldflags='-s -w' -o dist/linux/amd64/opencode-zen-pool-v0.1.0.so ./src
+rm -f dist/linux/amd64/opencode-zen-pool-v0.1.0.h
+python3 scripts/check_abi.py dist/linux/amd64/opencode-zen-pool-v0.1.0.so
+{
+  "native_abi": 1,
+  "schema": 6,
+  "plugin_id": "opencode-zen-pool",
+  "version": "0.1.0",
+  "registration": "PASS"
+}

@@ -1,0 +1,29 @@
+=== RUN   TestNativeHostDrainThenSwitch
+    host_test.go:481: native registration: id=opencode-zen-pool version=0.1.0; three configured auth IDs discovered
+    host_test.go:505: ten successes stayed on key 1 / authenticated HTTP proxy; session, client, request ID, prompt-cache key preserved
+    host_test.go:521: production 429 quota event persisted Retry-After and advanced to exact key 2 / HTTPS proxy
+    host_test.go:548: actual 503 and non-quota 429 retained key 2; authenticated explicit resume succeeded
+    host_test.go:568: Zen 401 CreditsError advanced to key 3 / authenticated SOCKS5; streaming also passed
+    host_test.go:593: restart retained current/counters/cooldowns; five all-dead requests returned aggregate 503 without contacting upstream
+    host_test.go:621: management authentication and credential non-disclosure checks passed
+--- PASS: TestNativeHostDrainThenSwitch (1.59s)
+=== RUN   TestNativeHostDrainThenSwitch
+    host_test.go:481: native registration: id=opencode-zen-pool version=0.1.0; three configured auth IDs discovered
+    host_test.go:505: ten successes stayed on key 1 / authenticated HTTP proxy; session, client, request ID, prompt-cache key preserved
+    host_test.go:521: production 429 quota event persisted Retry-After and advanced to exact key 2 / HTTPS proxy
+    host_test.go:548: actual 503 and non-quota 429 retained key 2; authenticated explicit resume succeeded
+    host_test.go:568: Zen 401 CreditsError advanced to key 3 / authenticated SOCKS5; streaming also passed
+    host_test.go:593: restart retained current/counters/cooldowns; five all-dead requests returned aggregate 503 without contacting upstream
+    host_test.go:621: management authentication and credential non-disclosure checks passed
+--- PASS: TestNativeHostDrainThenSwitch (1.62s)
+=== RUN   TestNativeHostDrainThenSwitch
+    host_test.go:481: native registration: id=opencode-zen-pool version=0.1.0; three configured auth IDs discovered
+    host_test.go:505: ten successes stayed on key 1 / authenticated HTTP proxy; session, client, request ID, prompt-cache key preserved
+    host_test.go:521: production 429 quota event persisted Retry-After and advanced to exact key 2 / HTTPS proxy
+    host_test.go:548: actual 503 and non-quota 429 retained key 2; authenticated explicit resume succeeded
+    host_test.go:568: Zen 401 CreditsError advanced to key 3 / authenticated SOCKS5; streaming also passed
+    host_test.go:593: restart retained current/counters/cooldowns; five all-dead requests returned aggregate 503 without contacting upstream
+    host_test.go:621: management authentication and credential non-disclosure checks passed
+--- PASS: TestNativeHostDrainThenSwitch (1.58s)
+PASS
+ok  	opencode-zen-pool/integration	5.815s

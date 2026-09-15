@@ -1,0 +1,26 @@
+dist/linux/amd64/opencode-zen-pool-v0.1.0.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=5b5a4e48407b7e5e24b6ed7c796a04e7af73461f, stripped
+00000000001eaf80 T _cgoexp_57d7b8242704_zen_plugin_call
+00000000001eafe0 T _cgoexp_57d7b8242704_zen_plugin_shutdown
+00000000001ebed0 T cliproxy_plugin_init
+00000000001eba90 T zen_plugin_call
+00000000001ebb00 T zen_plugin_shutdown
+	linux-vdso.so.1 (0x00007f6262f9d000)
+	libyaml-0.so.2 => /lib/x86_64-linux-gnu/libyaml-0.so.2 (0x00007f6262b6c000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6262978000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f6262f9f000)
+GLIBC_2.2.5
+GLIBC_2.3.2
+GLIBC_2.32
+GLIBC_2.34
+dist/linux/amd64/opencode-zen-pool-v0.1.0.so: go1.23.2
+	path	opencode-zen-pool/src
+	mod	opencode-zen-pool	(devel)
+	build	-buildmode=c-shared
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=1
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+	build	vcs=git
+	build	vcs.modified=true

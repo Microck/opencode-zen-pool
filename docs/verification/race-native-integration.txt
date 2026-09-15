@@ -1,0 +1,7 @@
+=== RUN   TestNativeHostDrainThenSwitch
+    host_test.go:478: status condition not reached; current= accounts=[]; host=CLIProxyAPI Version: 7.2.158, Commit: 5b278561, BuiltAt: 2026-09-11T16:06:19Z
+        ==18346==ERROR: ThreadSanitizer failed to allocate 0x1f50000 (32833536) bytes at address 11e9cfe0c0000 (errno: 12)
+--- FAIL: TestNativeHostDrainThenSwitch (10.05s)
+FAIL
+FAIL	opencode-zen-pool/integration	10.073s
+FAIL

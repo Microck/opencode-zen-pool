@@ -1,0 +1,234 @@
+[
+  {
+    "name": "zen_free_usage",
+    "status": 429,
+    "headers": {
+      "Retry-After": [
+        "3600"
+      ]
+    },
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "FreeUsageLimitError",
+        "message": "Rate limit exceeded. Please try again later."
+      },
+      "metadata": {}
+    },
+    "kind": "quota",
+    "reason": "free_usage_limit",
+    "seconds": 3600,
+    "source": "retry_after_header"
+  },
+  {
+    "name": "zen_transient_rate",
+    "status": 429,
+    "headers": {
+      "Retry-After": [
+        "2"
+      ]
+    },
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "RateLimitError",
+        "message": "Rate limit exceeded. Please try again later."
+      },
+      "metadata": {}
+    },
+    "kind": "rate_limit",
+    "reason": "transient_rate_limit",
+    "seconds": 2,
+    "source": "retry_after_header"
+  },
+  {
+    "name": "zen_credits",
+    "status": 401,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "CreditsError",
+        "message": "Insufficient balance. Add credits to continue."
+      }
+    },
+    "kind": "quota",
+    "reason": "credits_exhausted",
+    "seconds": 1800,
+    "source": "fallback"
+  },
+  {
+    "name": "zen_workspace_monthly",
+    "status": 401,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "MonthlyLimitError",
+        "message": "Monthly spending limit reached."
+      }
+    },
+    "kind": "quota",
+    "reason": "workspace_monthly_limit",
+    "seconds": 1800,
+    "source": "fallback"
+  },
+  {
+    "name": "zen_user_monthly",
+    "status": 401,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "UserLimitError",
+        "message": "User monthly limit reached."
+      }
+    },
+    "kind": "quota",
+    "reason": "user_monthly_limit",
+    "seconds": 1800,
+    "source": "fallback"
+  },
+  {
+    "name": "zen_black_usage",
+    "status": 429,
+    "headers": {
+      "Retry-After": [
+        "600"
+      ]
+    },
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "BlackUsageLimitError",
+        "message": "Usage limit reached."
+      },
+      "metadata": {}
+    },
+    "kind": "quota",
+    "reason": "black_usage_limit",
+    "seconds": 600,
+    "source": "retry_after_header"
+  },
+  {
+    "name": "zen_invalid_auth",
+    "status": 401,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "AuthError",
+        "message": "Invalid API key"
+      }
+    },
+    "kind": "auth",
+    "reason": "authentication_failure",
+    "seconds": 0
+  },
+  {
+    "name": "zen_region",
+    "status": 403,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "RegionError",
+        "message": "Region unavailable"
+      }
+    },
+    "kind": "auth",
+    "reason": "authorization_failure",
+    "seconds": 0
+  },
+  {
+    "name": "zen_internal",
+    "status": 500,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "error",
+        "message": "Internal server error"
+      }
+    },
+    "kind": "transient",
+    "reason": "upstream_5xx",
+    "seconds": 0
+  },
+  {
+    "name": "go_not_supported",
+    "status": 429,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "GoUsageLimitError",
+        "message": "Usage limit reached."
+      },
+      "metadata": {
+        "limitName": "5 hour"
+      }
+    },
+    "kind": "failure",
+    "reason": "unsupported_go_response",
+    "seconds": 0
+  },
+  {
+    "name": "generic_explicit_quota",
+    "status": 429,
+    "body": {
+      "error": {
+        "code": "insufficient_quota",
+        "message": "You exceeded your current quota."
+      },
+      "retry_after": 300
+    },
+    "kind": "quota",
+    "reason": "explicit_quota_limit",
+    "seconds": 300,
+    "source": "body_duration"
+  },
+  {
+    "name": "generic_ambiguous_429",
+    "status": 429,
+    "body": {
+      "error": {
+        "message": "Too many requests"
+      }
+    },
+    "kind": "rate_limit",
+    "reason": "unclassified_429",
+    "seconds": 0
+  },
+  {
+    "name": "explicit_rate_wins_over_quota_word",
+    "status": 429,
+    "body": {
+      "error": {
+        "type": "RateLimitError",
+        "message": "Token quota per minute exceeded"
+      }
+    },
+    "kind": "rate_limit",
+    "reason": "transient_rate_limit",
+    "seconds": 0
+  },
+  {
+    "name": "explicit_rate_code_wins",
+    "status": 429,
+    "body": {
+      "error": {
+        "code": "RateLimitError",
+        "message": "Usage limit reached"
+      }
+    },
+    "kind": "rate_limit",
+    "reason": "transient_rate_limit",
+    "seconds": 0
+  },
+  {
+    "name": "hyphenated_rate_window",
+    "status": 429,
+    "body": {
+      "error": {
+        "message": "Token quota exceeded for per-minute usage"
+      }
+    },
+    "kind": "rate_limit",
+    "reason": "unclassified_429",
+    "seconds": 0
+  }
+]
