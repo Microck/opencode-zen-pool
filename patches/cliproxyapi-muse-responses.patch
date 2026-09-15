@@ -1,8 +1,35 @@
 diff --git a/internal/runtime/executor/openai_compat_executor.go b/internal/runtime/executor/openai_compat_executor.go
-index 6c77003..5e5a889 100644
+index 6c77003..9dec78d 100644
 --- a/internal/runtime/executor/openai_compat_executor.go
 +++ b/internal/runtime/executor/openai_compat_executor.go
-@@ -106,6 +106,11 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+@@ -13,6 +13,7 @@ import (
+ 	"net/textproto"
+ 	"strconv"
+ 	"strings"
++	"sync"
+ 	"time"
+ 
+ 	"github.com/google/uuid"
+@@ -40,13 +41,15 @@ const (
+ // It performs request/response translation and executes against the provider base URL
+ // using per-auth credentials (API key) and per-auth HTTP transport (proxy) from context.
+ type OpenAICompatExecutor struct {
+-	provider string
+-	cfg      *config.Config
++	provider   string
++	cfg        *config.Config
++	affinityMu sync.Mutex
++	affinity   map[string]string
+ }
+ 
+ // NewOpenAICompatExecutor creates an executor bound to a provider key (e.g., "openrouter").
+ func NewOpenAICompatExecutor(provider string, cfg *config.Config) *OpenAICompatExecutor {
+-	return &OpenAICompatExecutor{provider: provider, cfg: cfg}
++	return &OpenAICompatExecutor{provider: provider, cfg: cfg, affinity: make(map[string]string)}
+ }
+ 
+ // Identifier implements cliproxyauth.ProviderExecutor.
+@@ -106,6 +109,11 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
  	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
  	to := sdktranslator.FromString("openai")
  	endpoint := "/chat/completions"
@@ -14,7 +41,7 @@ index 6c77003..5e5a889 100644
  	if opts.Alt == "responses/compact" {
  		to = sdktranslator.FromString("openai-response")
  		endpoint = "/responses/compact"
-@@ -116,8 +121,14 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+@@ -116,8 +124,14 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
  	}
  	originalPayload := originalPayloadSource
  	isCompat := helps.APIKeyModelIsCompat(req)
@@ -31,7 +58,7 @@ index 6c77003..5e5a889 100644
  
  	translated, err = helps.ApplyRequestThinking(translated, req, opts, from.String(), to.String(), e.Identifier())
  	if err != nil {
-@@ -130,7 +141,7 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+@@ -130,7 +144,7 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
  	if helps.ShouldNormalizeOpenAIToolResultsForModel(e.resolveCompatConfig(auth), baseModel, requestedModel) {
  		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
  	}
@@ -40,7 +67,17 @@ index 6c77003..5e5a889 100644
  		translated, err = e.applyPromptCacheKey(ctx, auth, from, baseModel, req, opts, translated)
  		if err != nil {
  			return resp, err
-@@ -325,14 +336,24 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+@@ -142,6 +156,9 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+ 		}
+ 		translated = sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "openai compat executor", translated)
+ 	}
++	if directMuseResponses {
++		translated = e.sanitizeMuseCallerHandoff(ctx, auth, opts, translated)
++	}
+ 	reporter.SetTranslatedReasoningEffort(translated, to.String())
+ 
+ 	url := strings.TrimSuffix(baseURL, "/") + endpoint
+@@ -325,14 +342,24 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
  	from := opts.SourceFormat
  	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
  	to := sdktranslator.FromString("openai")
@@ -67,7 +104,7 @@ index 6c77003..5e5a889 100644
  
  	translated, err = helps.ApplyRequestThinking(translated, req, opts, from.String(), to.String(), e.Identifier())
  	if err != nil {
-@@ -345,19 +366,25 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+@@ -345,19 +372,28 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
  	if helps.ShouldNormalizeOpenAIToolResultsForModel(e.resolveCompatConfig(auth), baseModel, requestedModel) {
  		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
  	}
@@ -87,6 +124,9 @@ index 6c77003..5e5a889 100644
 +		// are captured even when the upstream is an OpenAI-compatible provider.
 +		translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
 +	}
++	if directMuseResponses {
++		translated = e.sanitizeMuseCallerHandoff(ctx, auth, opts, translated)
++	}
  	reporter.SetTranslatedReasoningEffort(translated, to.String())
  
 -	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
@@ -98,7 +138,7 @@ index 6c77003..5e5a889 100644
  	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(translated))
  	if err != nil {
  		return nil, err
-@@ -467,6 +494,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+@@ -467,6 +503,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
  			}
  			dataPayload := bytes.TrimSpace(bytes.Join(dataLines, []byte("\n")))
  			isDone := bytes.Equal(dataPayload, []byte("[DONE]"))
@@ -106,7 +146,7 @@ index 6c77003..5e5a889 100644
  			if isDone && openAICompatErrorEvent(eventName) {
  				publishStreamError(statusErr{code: http.StatusBadGateway, msg: "upstream error event ended before [DONE]"}, false)
  				return true
-@@ -492,7 +520,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+@@ -492,7 +529,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
  					return true
  				}
  			}
@@ -115,7 +155,7 @@ index 6c77003..5e5a889 100644
  				seenDone = true
  				return true
  			}
-@@ -976,6 +1004,10 @@ func (e *OpenAICompatExecutor) overrideModel(payload []byte, model string) []byt
+@@ -976,6 +1013,37 @@ func (e *OpenAICompatExecutor) overrideModel(payload []byte, model string) []byt
  	return helps.SetStringIfDifferent(payload, "model", model)
  }
  
@@ -123,6 +163,130 @@ index 6c77003..5e5a889 100644
 +	return from == sdktranslator.FormatOpenAIResponse && strings.Contains(strings.ToLower(model), "muse-spark")
 +}
 +
++func (e *OpenAICompatExecutor) sanitizeMuseCallerHandoff(ctx context.Context, auth *cliproxyauth.Auth, opts cliproxyexecutor.Options, body []byte) []byte {
++	session := ""
++	for key, values := range opts.Headers {
++		if strings.EqualFold(key, "x-opencode-session") && len(values) > 0 {
++			session = strings.TrimSpace(values[0])
++			break
++		}
++	}
++	if session == "" {
++		session = "<anonymous>"
++	}
++	authID := "<anonymous>"
++	if auth != nil && strings.TrimSpace(auth.ID) != "" {
++		authID = auth.ID
++	}
++	affinity := session + "\x00" + e.provider
++	e.affinityMu.Lock()
++	previous, known := e.affinity[affinity]
++	e.affinity[affinity] = authID
++	e.affinityMu.Unlock()
++	if known && previous == authID {
++		return sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "openai compat Muse handoff", body)
++	}
++	body = dropOpenAIResponsesReasoningEncryptedContent(ctx, "openai compat Muse handoff", body)
++	return sanitizeOpenAIResponsesReasoningEncryptedContent(ctx, "openai compat Muse handoff", body)
++}
++
  func openAICompatErrorEvent(eventName string) bool {
  	return strings.EqualFold(eventName, "error") || strings.EqualFold(eventName, "response.error") || strings.EqualFold(eventName, "response.failed")
  }
+diff --git a/internal/runtime/executor/openai_responses_signature.go b/internal/runtime/executor/openai_responses_signature.go
+index cdacc31..5c3129b 100644
+--- a/internal/runtime/executor/openai_responses_signature.go
++++ b/internal/runtime/executor/openai_responses_signature.go
+@@ -48,6 +48,61 @@ func promoteOpenAIResponsesReasoningTextToSummary(itemRaw string, content gjson.
+ 	return sjson.SetRaw(itemRaw, "summary", b.String())
+ }
+ 
++func dropOpenAIResponsesReasoningEncryptedContent(ctx context.Context, provider string, body []byte) []byte {
++	input := util.GetGJSONBytesNoCopy(body, "input")
++	if !input.Exists() || !input.IsArray() {
++		return body
++	}
++	items := input.Array()
++	var rebuilt []byte
++	write := func(raw string) {
++		if len(rebuilt) > 1 {
++			rebuilt = append(rebuilt, ',')
++		}
++		rebuilt = append(rebuilt, raw...)
++	}
++	start := func(index int) {
++		if rebuilt != nil {
++			return
++		}
++		rebuilt = []byte{'['}
++		for i := 0; i < index; i++ {
++			write(items[i].Raw)
++		}
++	}
++	for index, item := range items {
++		raw := item.Raw
++		if item.Get("type").String() != "reasoning" || !item.Get("encrypted_content").Exists() {
++			if rebuilt != nil {
++				write(raw)
++			}
++			continue
++		}
++		next, err := sjson.Delete(raw, "encrypted_content")
++		if err == nil {
++			next, err = sjson.Delete(next, "id")
++		}
++		if err != nil {
++			helps.LogWithRequestID(ctx).Debugf("%s: failed to drop caller-bound reasoning at input[%d]: %v", provider, index, err)
++			if rebuilt != nil {
++				write(raw)
++			}
++			continue
++		}
++		start(index)
++		write(next)
++	}
++	if rebuilt == nil {
++		return body
++	}
++	rebuilt = append(rebuilt, ']')
++	updated, err := sjson.SetRawBytes(body, "input", rebuilt)
++	if err != nil {
++		return body
++	}
++	return updated
++}
++
+ func sanitizeOpenAIResponsesReasoningEncryptedContent(ctx context.Context, provider string, body []byte) []byte {
+ 	inputResult := util.GetGJSONBytesNoCopy(body, "input")
+ 	if !inputResult.Exists() || !inputResult.IsArray() {
+diff --git a/internal/runtime/executor/openai_responses_signature_test.go b/internal/runtime/executor/openai_responses_signature_test.go
+index f39ca23..f597b3b 100644
+--- a/internal/runtime/executor/openai_responses_signature_test.go
++++ b/internal/runtime/executor/openai_responses_signature_test.go
+@@ -28,6 +28,26 @@ func validOpenAIResponsesReasoningEncryptedContentForTest() string {
+ 	return base64.RawURLEncoding.EncodeToString(payload)
+ }
+ 
++func TestDropOpenAIResponsesReasoningEncryptedContentPreservesConversation(t *testing.T) {
++	body := []byte(`{"input":[` +
++		`{"type":"message","role":"user","content":[{"type":"input_text","text":"hello"}]},` +
++		`{"id":"rs_old","type":"reasoning","summary":[],"encrypted_content":"caller-bound"},` +
++		`{"type":"function_call","name":"read","call_id":"call_1","arguments":"{}"}` +
++		`]}`)
++
++	got := dropOpenAIResponsesReasoningEncryptedContent(context.Background(), "test", body)
++	if gjson.GetBytes(got, "input.1.encrypted_content").Exists() || gjson.GetBytes(got, "input.1.id").Exists() {
++		t.Fatalf("caller-bound reasoning fields remain: %s", got)
++	}
++	count := gjson.GetBytes(got, "input.#").Int()
++	if count != 3 {
++		t.Fatalf("input item count = %d, want 3; body=%s", count, got)
++	}
++	if gjson.GetBytes(got, "input.0.content.0.text").String() != "hello" || gjson.GetBytes(got, "input.2.name").String() != "read" {
++		t.Fatalf("conversation items changed: %s", got)
++	}
++}
++
+ func TestSanitizeOpenAIResponsesReasoningEncryptedContent_StripsOrphanIDsWhenStoreDisabled(t *testing.T) {
+ 	valid := validOpenAIResponsesReasoningEncryptedContentForTest()
+ 	body := []byte(`{"store":false,"input":[` +

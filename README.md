@@ -90,6 +90,11 @@ model `muse-spark-1.3-contributor-free`:
 2. Preserve the Responses JSON instead of translating it to Chat Completions.
 3. Send the request to the upstream `/responses` endpoint.
 4. Treat `response.completed` and `response.done` as valid stream terminators.
+5. Track the active session/key affinity. When it changes, remove only caller-bound
+   reasoning ciphertext and stale reasoning IDs while preserving messages and tools.
+
+When the same session/key affinity continues, valid encrypted reasoning is retained.
+Malformed or orphaned reasoning still passes through the host's normal sanitizer.
 
 The patch does not contain credentials, alter the Zen pool scheduler, or change
 the behavior of other OpenAI-compatible models. Build and test the host after
