@@ -73,9 +73,27 @@ preserves an existing caller-provided key; the plugin does not invent cache keys
 
 Use Zen-specific model aliases not shared with unrelated providers. Keep the
 host's existing chat/completions-compatible model configuration. Some Zen models
-use `/messages` or `/responses`; adding those protocols is not part of this
-plugin. The actual verified path is host `/v1/chat/completions` to Zen
-`/zen/v1/chat/completions`, including streaming.
+use `/messages` or `/responses`. The plugin keeps scheduling and quota state
+independent from the host protocol. For Muse Spark, apply
+`patches/cliproxyapi-muse-responses.patch` to CLIProxyAPI v7.3.4 or a source
+tree with the same executor, then configure a local OMP provider with
+`api: openai-responses` and base URL `http://127.0.0.1:8317/v1`. The resulting
+path is host `/v1/responses` to Zen `/zen/v1/responses`, including streaming.
+Other Zen models continue to use the host's normal chat/completions path.
+
+### Muse Spark Responses support
+
+The public patch makes the smallest host-side change needed for the exact free
+model `muse-spark-1.3-contributor-free`:
+
+1. Detect Muse requests entering through the Responses API.
+2. Preserve the Responses JSON instead of translating it to Chat Completions.
+3. Send the request to the upstream `/responses` endpoint.
+4. Treat `response.completed` and `response.done` as valid stream terminators.
+
+The patch does not contain credentials, alter the Zen pool scheduler, or change
+the behavior of other OpenAI-compatible models. Build and test the host after
+applying it. Keep the existing plugin configuration and per-key proxy entries.
 
 Make this the sole applicable highest-priority scheduler. Another scheduler with
 higher precedence, an unloaded plugin, or a host feature that bypasses plugin

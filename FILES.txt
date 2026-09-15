@@ -7,6 +7,7 @@ dist/linux/amd64/opencode-zen-pool-v0.1.0.so
 dist/linux/arm64/opencode-zen-pool-v0.1.0.so
 docs/PROVENANCE.md
 docs/VERIFICATION.md
+patches/cliproxyapi-muse-responses.patch
 docs/verification/build-checks.txt
 docs/verification/coverage.txt
 docs/verification/diff-check.txt

@@ -43,7 +43,11 @@ openai-compatibility:
       - api-key: "ZEN_KEY_3"
         proxy-url: "https://proxy-3.example:8443"
     # Keep your existing Zen chat/completions-compatible model list here.
-    # The placeholder is deliberately not a claim about current model inventory.
+    # For Muse Spark Responses support, apply
+    # ../patches/cliproxyapi-muse-responses.patch to the CLIProxyAPI source,
+    # then expose the exact upstream model through an openai-responses OMP
+    # provider pointed at http://127.0.0.1:8317/v1.
+    # The placeholder is deliberately not a claim about current inventory.
     models:
       - name: "YOUR_ZEN_CHAT_COMPLETIONS_MODEL"
         alias: "zen-main"

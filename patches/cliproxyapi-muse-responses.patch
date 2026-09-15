@@ -1,0 +1,128 @@
+diff --git a/internal/runtime/executor/openai_compat_executor.go b/internal/runtime/executor/openai_compat_executor.go
+index 6c77003..5e5a889 100644
+--- a/internal/runtime/executor/openai_compat_executor.go
++++ b/internal/runtime/executor/openai_compat_executor.go
+@@ -106,6 +106,11 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+ 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
+ 	to := sdktranslator.FromString("openai")
+ 	endpoint := "/chat/completions"
++	directMuseResponses := isMuseResponsesRequest(baseModel, from)
++	if directMuseResponses {
++		to = sdktranslator.FormatOpenAIResponse
++		endpoint = "/responses"
++	}
+ 	if opts.Alt == "responses/compact" {
+ 		to = sdktranslator.FromString("openai-response")
+ 		endpoint = "/responses/compact"
+@@ -116,8 +121,14 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+ 	}
+ 	originalPayload := originalPayloadSource
+ 	isCompat := helps.APIKeyModelIsCompat(req)
+-	originalTranslated := helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, originalPayload, opts.Stream, isCompat)
+-	translated := helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, req.Payload, opts.Stream, isCompat)
++	var originalTranslated, translated []byte
++	if directMuseResponses {
++		originalTranslated = e.overrideModel(originalPayload, baseModel)
++		translated = e.overrideModel(req.Payload, baseModel)
++	} else {
++		originalTranslated = helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, originalPayload, opts.Stream, isCompat)
++		translated = helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, req.Payload, opts.Stream, isCompat)
++	}
+ 
+ 	translated, err = helps.ApplyRequestThinking(translated, req, opts, from.String(), to.String(), e.Identifier())
+ 	if err != nil {
+@@ -130,7 +141,7 @@ func (e *OpenAICompatExecutor) Execute(ctx context.Context, auth *cliproxyauth.A
+ 	if helps.ShouldNormalizeOpenAIToolResultsForModel(e.resolveCompatConfig(auth), baseModel, requestedModel) {
+ 		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
+ 	}
+-	if opts.Alt != "responses/compact" {
++	if opts.Alt != "responses/compact" && !directMuseResponses {
+ 		translated, err = e.applyPromptCacheKey(ctx, auth, from, baseModel, req, opts, translated)
+ 		if err != nil {
+ 			return resp, err
+@@ -325,14 +336,24 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+ 	from := opts.SourceFormat
+ 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
+ 	to := sdktranslator.FromString("openai")
++	directMuseResponses := isMuseResponsesRequest(baseModel, from)
++	if directMuseResponses {
++		to = sdktranslator.FormatOpenAIResponse
++	}
+ 	originalPayloadSource := req.Payload
+ 	if len(opts.OriginalRequest) > 0 {
+ 		originalPayloadSource = opts.OriginalRequest
+ 	}
+ 	originalPayload := originalPayloadSource
+ 	isCompat := helps.APIKeyModelIsCompat(req)
+-	originalTranslated := helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, originalPayload, true, isCompat)
+-	translated := helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, req.Payload, true, isCompat)
++	var originalTranslated, translated []byte
++	if directMuseResponses {
++		originalTranslated = e.overrideModel(originalPayload, baseModel)
++		translated = e.overrideModel(req.Payload, baseModel)
++	} else {
++		originalTranslated = helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, originalPayload, true, isCompat)
++		translated = helps.TranslateRequestWithAPIKeyModelCompatibility(ctx, opts.Headers, e.cfg, from, to, baseModel, req.Payload, true, isCompat)
++	}
+ 
+ 	translated, err = helps.ApplyRequestThinking(translated, req, opts, from.String(), to.String(), e.Identifier())
+ 	if err != nil {
+@@ -345,19 +366,25 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+ 	if helps.ShouldNormalizeOpenAIToolResultsForModel(e.resolveCompatConfig(auth), baseModel, requestedModel) {
+ 		translated = helps.NormalizeOpenAIToolResultsTextOnly(translated)
+ 	}
+-	if opts.Alt != "responses/compact" {
++	if opts.Alt != "responses/compact" && !directMuseResponses {
+ 		translated, err = e.applyPromptCacheKey(ctx, auth, from, baseModel, req, opts, translated)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+ 	}
+ 
+-	// Request usage data in the final streaming chunk so that token statistics
+-	// are captured even when the upstream is an OpenAI-compatible provider.
+-	translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
++	if !directMuseResponses {
++		// Request usage data in the final streaming chunk so that token statistics
++		// are captured even when the upstream is an OpenAI-compatible provider.
++		translated = helps.SetBoolIfDifferent(translated, "stream_options.include_usage", true)
++	}
+ 	reporter.SetTranslatedReasoningEffort(translated, to.String())
+ 
+-	url := strings.TrimSuffix(baseURL, "/") + "/chat/completions"
++	endpoint := "/chat/completions"
++	if directMuseResponses {
++		endpoint = "/responses"
++	}
++	url := strings.TrimSuffix(baseURL, "/") + endpoint
+ 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(translated))
+ 	if err != nil {
+ 		return nil, err
+@@ -467,6 +494,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+ 			}
+ 			dataPayload := bytes.TrimSpace(bytes.Join(dataLines, []byte("\n")))
+ 			isDone := bytes.Equal(dataPayload, []byte("[DONE]"))
++			isResponsesTerminal := directMuseResponses && (strings.EqualFold(eventName, "response.completed") || strings.EqualFold(eventName, "response.done") || gjson.GetBytes(dataPayload, "type").String() == "response.completed")
+ 			if isDone && openAICompatErrorEvent(eventName) {
+ 				publishStreamError(statusErr{code: http.StatusBadGateway, msg: "upstream error event ended before [DONE]"}, false)
+ 				return true
+@@ -492,7 +520,7 @@ func (e *OpenAICompatExecutor) ExecuteStream(ctx context.Context, auth *cliproxy
+ 					return true
+ 				}
+ 			}
+-			if isDone {
++			if isDone || isResponsesTerminal {
+ 				seenDone = true
+ 				return true
+ 			}
+@@ -976,6 +1004,10 @@ func (e *OpenAICompatExecutor) overrideModel(payload []byte, model string) []byt
+ 	return helps.SetStringIfDifferent(payload, "model", model)
+ }
+ 
++func isMuseResponsesRequest(model string, from sdktranslator.Format) bool {
++	return from == sdktranslator.FormatOpenAIResponse && strings.Contains(strings.ToLower(model), "muse-spark")
++}
++
+ func openAICompatErrorEvent(eventName string) bool {
+ 	return strings.EqualFold(eventName, "error") || strings.EqualFold(eventName, "response.error") || strings.EqualFold(eventName, "response.failed")
+ }
