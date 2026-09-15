@@ -4,6 +4,7 @@ Makefile
 README.md
 THIRD_PARTY_NOTICES.md
 dist/linux/amd64/opencode-zen-pool-v0.1.0.so
+dist/linux/arm64/opencode-zen-pool-v0.1.0.so
 docs/PROVENANCE.md
 docs/VERIFICATION.md
 docs/verification/build-checks.txt

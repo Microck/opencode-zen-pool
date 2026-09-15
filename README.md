@@ -17,12 +17,13 @@ CLIProxyAPI 7.2.158, commit
 The plugin uses C ABI 1 / JSON schema 6, not Go's `plugin.Open` ABI. Its own build
 used Go 1.23.2, GCC 14.2, Linux amd64, Debian glibc 2.41 and libyaml 0.2.5.
 
-Only Linux amd64 is built and tested here. The ELF imports symbols through
-`GLIBC_2.34` and needs `libyaml-0.so.2`. It is not a glibc-2.17-baseline binary,
-even though the upstream host is. The supplied binary is not for musl/Alpine,
-macOS, Windows, ARM, or a CLIProxyAPI `no-plugin` build. No compatibility claim
-is made for other host releases, including newer releases. Rebuild and rerun
-integration tests on the intended target before expanding that claim.
+Linux amd64 and arm64 builds are supported when built on the intended target.
+The ELF imports symbols through the host's glibc and needs `libyaml-0-2.so.2`.
+The supplied release binary was built for Linux amd64. It is not a
+glibc-2.17-baseline binary, even though the upstream host is. The plugin is not
+for musl/Alpine, macOS, Windows, or a CLIProxyAPI `no-plugin` build. Rebuild and
+rerun integration tests on the intended target before claiming compatibility
+with a particular host release.
 
 ## Installation
 
@@ -35,11 +36,12 @@ From an extracted distribution:
 
 ```sh
 # The host must already be installed in /opt/cliproxyapi.
-install -d -m 0755 /opt/cliproxyapi/plugins/linux/amd64
-install -m 0755 dist/linux/amd64/opencode-zen-pool-v0.1.0.so \
-  /opt/cliproxyapi/plugins/linux/amd64/
+ARCH="$(go env GOARCH)"
+install -d -m 0755 "/opt/cliproxyapi/plugins/linux/$ARCH"
+install -m 0755 "dist/linux/$ARCH/opencode-zen-pool-v0.1.0.so" \
+  "/opt/cliproxyapi/plugins/linux/$ARCH/"
 install -d -m 0700 /var/lib/cliproxyapi-zen-pool
-ldd /opt/cliproxyapi/plugins/linux/amd64/opencode-zen-pool-v0.1.0.so
+ldd "/opt/cliproxyapi/plugins/linux/$ARCH/opencode-zen-pool-v0.1.0.so"
 ```
 
 Every dependency must resolve. The Debian runtime package used in verification
