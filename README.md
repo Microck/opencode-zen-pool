@@ -79,6 +79,8 @@ independent from the host protocol. For Muse Spark, apply
 tree with the same executor, then configure a local OMP provider with
 `api: openai-responses` and base URL `http://127.0.0.1:8317/v1`. The resulting
 path is host `/v1/responses` to Zen `/zen/v1/responses`, including streaming.
+OMP 18.1.20 and newer also require the Muse gateway compatibility policy below
+to prevent provider-bound encrypted reasoning from being requested or replayed.
 Other Zen models continue to use the host's normal chat/completions path.
 
 ### Muse Spark Responses support
@@ -90,11 +92,22 @@ model `muse-spark-1.3-contributor-free`:
 2. Preserve the Responses JSON instead of translating it to Chat Completions.
 3. Send the request to the upstream `/responses` endpoint.
 4. Treat `response.completed` and `response.done` as valid stream terminators.
-5. Track the active session/key affinity. When it changes, remove only caller-bound
-   reasoning ciphertext and stale reasoning IDs while preserving messages and tools.
+5. Defensively remove stale caller-bound reasoning ciphertext when the proxy
+   sees a new caller affinity, while preserving messages and tools.
 
-When the same session/key affinity continues, valid encrypted reasoning is retained.
-Malformed or orphaned reasoning still passes through the host's normal sanitizer.
+For OMP, the canonical fix is in OMP's provider compatibility policy, not an
+OpenCode session. Add this to the custom provider that fronts CLIProxyAPI:
+
+```yaml
+compat:
+  includeEncryptedReasoning: false
+  filterReasoningHistory: true
+```
+
+Keep `reasoning: true` and the normal thinking effort levels. This disables only
+opaque encrypted-reasoning replay, while preserving Muse reasoning controls and
+the visible conversation, tool calls, and tool results. OMP 18.1.20+ applies the
+same policy to its built-in OpenCode Zen and Go Muse entries.
 
 The patch does not contain credentials, alter the Zen pool scheduler, or change
 the behavior of other OpenAI-compatible models. Build and test the host after
