@@ -41,6 +41,7 @@ type configuration struct {
 	Fallback            time.Duration
 	AuthSuspension      time.Duration
 	RateFallback        time.Duration
+	TransientFallback   time.Duration
 	HostCoolingDisabled bool
 }
 
@@ -166,7 +167,7 @@ func readConfiguration(pluginYAML []byte) (configuration, error) {
 	if err != nil {
 		return cfg, errConfig
 	}
-	allowed := map[string]bool{"enabled": true, "priority": true, "cpa-config-path": true, "state-dir": true, "provider-name": true, "fallback-cooldown": true, "auth-suspension": true, "rate-limit-fallback": true, "disabled-accounts": true}
+	allowed := map[string]bool{"enabled": true, "priority": true, "cpa-config-path": true, "state-dir": true, "provider-name": true, "fallback-cooldown": true, "auth-suspension": true, "rate-limit-fallback": true, "transient-fallback": true, "disabled-accounts": true}
 	for k := range opts {
 		if !allowed[k] {
 			return cfg, errConfig
@@ -192,6 +193,10 @@ func readConfiguration(pluginYAML []byte) (configuration, error) {
 		return cfg, err
 	}
 	cfg.RateFallback, err = durationValue(opts, "rate-limit-fallback", time.Second)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.TransientFallback, err = durationValue(opts, "transient-fallback", 30*time.Second)
 	if err != nil {
 		return cfg, err
 	}

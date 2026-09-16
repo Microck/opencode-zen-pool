@@ -14,6 +14,7 @@ plugins:
       fallback-cooldown: 30m
       auth-suspension: 15m
       rate-limit-fallback: 1s
+      transient-fallback: 30s
       disabled-accounts: []
 
 openai-compatibility:

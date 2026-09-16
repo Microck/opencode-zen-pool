@@ -13,7 +13,7 @@ import (
 )
 
 func testConfig(n int) configuration {
-	c := configuration{Provider: "openai-compatible-opencode-zen", StateDir: "memory", Fallback: 30 * time.Minute, AuthSuspension: 15 * time.Minute, RateFallback: time.Second, Models: map[string]bool{"zen-fixture": true}, ForwardHeaders: map[string]string{}, HostCoolingDisabled: true}
+	c := configuration{Provider: "openai-compatible-opencode-zen", StateDir: "memory", Fallback: 30 * time.Minute, AuthSuspension: 15 * time.Minute, RateFallback: time.Second, TransientFallback: 30 * time.Second, Models: map[string]bool{"zen-fixture": true}, ForwardHeaders: map[string]string{}, HostCoolingDisabled: true}
 	for i := 0; i < n; i++ {
 		key := "fixture-key-" + string(rune('a'+i))
 		h := fingerprint(key)
@@ -109,12 +109,15 @@ func TestAllExhaustedAggregateAndExpiry(t *testing.T) {
 	*now = now.Add(61 * time.Second)
 	requirePick(t, p, 0)
 }
-func TestTransient5xxAndNonQuota429DoNotAdvance(t *testing.T) {
+func TestTransient5xxAdvancesAndNonQuota429DoesNot(t *testing.T) {
 	p, now := newTestPool(t, 2)
 	requirePick(t, p, 0)
 	observe(t, p, event(p, 0, 503, `{"error":{"message":"Internal server error"}}`))
-	requirePick(t, p, 0)
-	r := event(p, 0, 429, `{"error":{"type":"RateLimitError","message":"Rate limit exceeded"}}`)
+	requirePick(t, p, 1)
+	if p.Status().Accounts[0].State != "unavailable" {
+		t.Fatal("transient failure did not quarantine account")
+	}
+	r := event(p, 1, 429, `{"error":{"type":"RateLimitError","message":"Rate limit exceeded"}}`)
 	r.ResponseHeaders.Set("Retry-After", "2")
 	observe(t, p, r)
 	if p.Status().Accounts[0].State == "exhausted" {
@@ -123,11 +126,11 @@ func TestTransient5xxAndNonQuota429DoNotAdvance(t *testing.T) {
 	if _, e := p.Pick(pickRequest(p)); e == nil {
 		t.Fatal("rate backoff ignored")
 	}
-	if p.Status().Current != p.cfg.Accounts[0].Label {
-		t.Fatal("rate limit advanced")
+	if p.Status().Current != p.cfg.Accounts[1].Label {
+		t.Fatal("rate limit changed the selected account")
 	}
 	*now = now.Add(3 * time.Second)
-	requirePick(t, p, 0)
+	requirePick(t, p, 1)
 }
 func TestMissingHostCandidateNeverImplicitFailover(t *testing.T) {
 	p, _ := newTestPool(t, 2)

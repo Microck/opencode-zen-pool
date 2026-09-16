@@ -48,6 +48,7 @@ func registration() any {
 			{"Name": "fallback-cooldown", "Type": "string", "Description": "Quota cooldown when no valid reset is supplied; default 30m"},
 			{"Name": "auth-suspension", "Type": "string", "Description": "401/403 suspension without failover; default 15m"},
 			{"Name": "rate-limit-fallback", "Type": "string", "Description": "Short non-quota 429 backoff without failover; default 1s"},
+			{"Name": "transient-fallback", "Type": "string", "Description": "Short 5xx/transport quarantine before retrying an account; default 30s"},
 			{"Name": "disabled-accounts", "Type": "array", "Description": "Safe zen-* account labels disabled by this plugin"},
 		}},
 		"capabilities": map[string]bool{"scheduler": true, "usage_plugin": true, "request_interceptor": true, "management_api": true},

@@ -173,11 +173,12 @@ exist, the latest reset wins conservatively. Missing/invalid resets use the
 configured fallback, recording `reset_source` and `fallback_reason`. Credits
 and spending caps are not assumed to replenish automatically after that fallback.
 
-5xx/transport errors do not park or advance an account. Non-quota 429 responses
-apply a temporary rate backoff, retain current, and never exhaust another key.
+Non-quota 429 responses apply a temporary rate backoff, retain current, and never exhaust another key.
 Generic 401/403 responses suspend current temporarily without quota failover.
-The current account remains pinned during these transient/suspension intervals;
-a clear unavailable response is preferable to unconfirmed rotation.
+5xx and transport failures apply the configured `transient-fallback` quarantine
+(30 seconds by default) and advance to the next eligible account. This avoids
+replaying a failing Zen route through OMP's automatic retry. The account becomes
+eligible again after the short quarantine.
 
 When all accounts are exhausted/disabled/suspended, the request guard returns
 HTTP 503 with `zen_pool_unavailable`, aggregate counts and the earliest known

@@ -128,6 +128,9 @@ func (p *pool) blockedLocked(a *account, now time.Time) string {
 	if now.Before(k.RateLimitedUntil) {
 		return "rate_limited"
 	}
+	if now.Before(k.TransientUntil) {
+		return "transient"
+	}
 	return ""
 }
 
@@ -323,6 +326,16 @@ func (p *pool) Observe(rec usageRecord) error {
 			k.RateLimitedUntil = until
 		}
 		k.LastAction = "rate_limited_without_failover"
+	case "transient":
+		k.TransientUntil = observed.Add(p.cfg.TransientFallback)
+		k.LastFailure.Until = k.TransientUntil
+		k.LastFailure.ResetSource = "transient_fallback"
+		k.LastFailure.FallbackReason = "upstream_5xx_or_transport_failure"
+		k.LastAction = "transient_failover"
+		if p.state.Current == hash {
+			p.state.Cursor = hash
+			p.chooseLocked(hash, now)
+		}
 	default:
 		k.LastAction = "failure_without_failover"
 	}
@@ -376,6 +389,7 @@ func (p *pool) Resume(label, confirm string) error {
 			k.ExhaustedUntil = time.Time{}
 			k.SuspendedUntil = time.Time{}
 			k.RateLimitedUntil = time.Time{}
+			k.TransientUntil = time.Time{}
 			k.IgnoreBefore = p.now()
 			k.LastAction = "manual_resume"
 			// A resumed account does not preempt an active healthy account.
@@ -459,7 +473,7 @@ func (p *pool) Status() poolStatus {
 		switch state {
 		case "":
 			state = "healthy"
-		case "disabled", "rate_limited":
+		case "disabled", "rate_limited", "transient":
 			state = "unavailable"
 		}
 		if p.fault != "" {

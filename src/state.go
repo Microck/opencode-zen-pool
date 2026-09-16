@@ -16,6 +16,7 @@ type keyState struct {
 	ExhaustedUntil   time.Time      `json:"cooldown_until,omitempty"`
 	SuspendedUntil   time.Time      `json:"suspended_until,omitempty"`
 	RateLimitedUntil time.Time      `json:"rate_limited_until,omitempty"`
+	TransientUntil   time.Time      `json:"transient_until,omitempty"`
 	IgnoreBefore     time.Time      `json:"ignore_results_before,omitempty"`
 	LastFailure      classification `json:"last_failure,omitempty"`
 	LastFailureAt    time.Time      `json:"last_failure_at,omitempty"`
