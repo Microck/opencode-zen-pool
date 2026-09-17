@@ -211,13 +211,14 @@ func TestAuthSuspensionAndExplicitResume(t *testing.T) {
 	if p.Status().Accounts[0].State != "suspended" {
 		t.Fatal("auth not suspended")
 	}
+	requirePick(t, p, 1)
 	if e := p.Resume(p.cfg.Accounts[0].Label, ""); e == nil {
 		t.Fatal("resume without confirmation")
 	}
 	if e := p.Resume(p.cfg.Accounts[0].Label, "clear-cooldown"); e != nil {
 		t.Fatal(e)
 	}
-	requirePick(t, p, 0)
+	requirePick(t, p, 1)
 	p.cfg.Accounts[1].Disabled = true
 	if e := p.Resume(p.cfg.Accounts[1].Label, "clear-cooldown"); e == nil {
 		t.Fatal("resume enabled disabled account")

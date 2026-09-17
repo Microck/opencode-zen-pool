@@ -244,6 +244,20 @@ func (p *pool) Pick(req schedulerRequest) (schedulerResponse, error) {
 	}
 	a := p.accountLocked(p.state.Current)
 	if reason := p.blockedLocked(a, now); reason != "" {
+		if reason == "suspended" || reason == "transient" {
+			if p.chooseLocked(a.Fingerprint, now) {
+				a = p.accountLocked(p.state.Current)
+				reason = p.blockedLocked(a, now)
+			}
+		}
+		if reason == "" {
+			for _, c := range req.Candidates {
+				if c.ID == a.AuthID && c.Status != "disabled" {
+					return schedulerResponse{Handled: true, AuthID: a.AuthID}, nil
+				}
+			}
+			return schedulerResponse{}, p.unavailableLocked("current_not_in_host_candidates_or_result_pending", now)
+		}
 		return schedulerResponse{}, p.unavailableLocked("current_"+reason, now)
 	}
 	for _, c := range req.Candidates {
@@ -314,6 +328,10 @@ func (p *pool) Observe(rec usageRecord) error {
 	case "auth":
 		k.SuspendedUntil = observed.Add(p.cfg.AuthSuspension)
 		k.LastAction = "auth_suspended"
+		if p.state.Current == hash {
+			p.state.Cursor = hash
+			p.chooseLocked(hash, now)
+		}
 	case "rate_limit":
 		until := c.Until
 		if until.IsZero() {
@@ -360,6 +378,11 @@ func (p *pool) Guard(model string, headers http.Header) error {
 	}
 	if p.state.Current != "" {
 		if r := p.blockedLocked(p.accountLocked(p.state.Current), now); r != "" {
+			if r == "suspended" || r == "transient" {
+				if p.chooseLocked(p.state.Current, now) {
+					return nil
+				}
+			}
 			return p.unavailableLocked("current_"+r, now)
 		}
 		return nil
